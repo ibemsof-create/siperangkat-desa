@@ -1,0 +1,2048 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sistem Absensi Scan Wajah - Pemerintah Desa</title>
+  
+  <!-- Favicon & Fonts -->
+  <link rel="icon" href="https://img.icons8.com/fluency/48/facial-recognition.png" type="image/png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- Bootstrap 5 CSS & Icons -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  
+  <!-- SweetAlert2 CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
+
+  <style>
+    :root {
+      --primary-color: #0d6efd;
+      --primary-dark: #0a58ca;
+      --desa-green: #059669;
+      --desa-green-dark: #047857;
+      --desa-accent: #0284c7;
+      --bg-body: #f1f5f9;
+      --card-bg: #ffffff;
+      --text-dark: #0f172a;
+    }
+
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background-color: var(--bg-body);
+      color: var(--text-dark);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Navbar Header */
+    .app-header {
+      background: linear-gradient(135deg, #1e3a8a 0%, #065f46 100%);
+      color: #ffffff;
+      padding: 1.25rem 0;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.12);
+    }
+
+    .app-logo {
+      width: 48px;
+      height: 48px;
+      background: rgba(255, 255, 255, 0.15);
+      backdrop-filter: blur(8px);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.6rem;
+      border: 1px solid rgba(255, 255, 255, 0.25);
+    }
+
+    /* Navigation Tabs */
+    .nav-tabs-custom {
+      border-bottom: 2px solid #e2e8f0;
+      gap: 0.5rem;
+    }
+
+    .nav-tabs-custom .nav-link {
+      border: none;
+      color: #64748b;
+      font-weight: 600;
+      font-size: 0.95rem;
+      padding: 0.75rem 1.25rem;
+      border-radius: 10px 10px 0 0;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .nav-tabs-custom .nav-link:hover {
+      color: #1e293b;
+      background: #e2e8f0;
+    }
+
+    .nav-tabs-custom .nav-link.active {
+      color: var(--desa-green-dark);
+      background: #ffffff;
+      border-bottom: 3px solid var(--desa-green);
+      box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.04);
+    }
+
+    /* Card Styling */
+    .card-custom {
+      background: var(--card-bg);
+      border-radius: 16px;
+      border: 1px solid #e2e8f0;
+      box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.05);
+      overflow: hidden;
+    }
+
+    /* Video & Camera Container */
+    .camera-wrapper {
+      position: relative;
+      width: 100%;
+      max-width: 560px;
+      margin: 0 auto;
+      aspect-ratio: 4/3;
+      background: #000000;
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+      border: 3px solid #334155;
+    }
+
+    .camera-video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transform: scaleX(-1); /* Efek Cermin */
+    }
+
+    .camera-canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      transform: scaleX(-1); /* Sinkron dengan cermin */
+      pointer-events: none;
+    }
+
+    .camera-overlay-badge {
+      position: absolute;
+      top: 15px;
+      left: 15px;
+      background: rgba(15, 23, 42, 0.8);
+      backdrop-filter: blur(6px);
+      color: #ffffff;
+      padding: 6px 14px;
+      border-radius: 30px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      z-index: 10;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+    }
+
+    .camera-face-guide {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 55%;
+      height: 65%;
+      border: 2px dashed rgba(255, 255, 255, 0.4);
+      border-radius: 50%;
+      pointer-events: none;
+      box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.25);
+      z-index: 5;
+    }
+
+    /* Status Selector Pill */
+    .status-btn-group {
+      display: flex;
+      background: #e2e8f0;
+      padding: 4px;
+      border-radius: 12px;
+      gap: 4px;
+    }
+
+    .status-btn-group .btn {
+      flex: 1;
+      border-radius: 10px;
+      font-weight: 700;
+      font-size: 0.95rem;
+      padding: 0.6rem 1rem;
+      border: none;
+      transition: all 0.2s ease;
+    }
+
+    .status-btn-group .btn-masuk.active {
+      background: #10b981;
+      color: #ffffff;
+      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.35);
+    }
+
+    .status-btn-group .btn-pulang.active {
+      background: #ef4444;
+      color: #ffffff;
+      box-shadow: 0 4px 12px rgba(239, 68, 68, 0.35);
+    }
+
+    /* Recognition Result Card */
+    .recognition-box {
+      border: 2px solid #e2e8f0;
+      border-radius: 14px;
+      padding: 1.25rem;
+      transition: all 0.3s ease;
+      background: #f8fafc;
+    }
+
+    .recognition-box.recognized {
+      border-color: #10b981;
+      background: #f0fdf4;
+      box-shadow: 0 4px 15px rgba(16, 185, 129, 0.15);
+    }
+
+    .recognition-box.unknown {
+      border-color: #f59e0b;
+      background: #fffbeb;
+    }
+
+    /* Pulse Dot */
+    .pulse-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #10b981;
+      display: inline-block;
+      box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+      animation: pulse 1.5s infinite;
+    }
+
+    .pulse-dot.danger {
+      background: #ef4444;
+      box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+    }
+
+    @keyframes pulse {
+      0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+      70% { transform: scale(1); box-shadow: 0 0 0 8px rgba(16, 185, 129, 0); }
+      100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+    }
+
+    /* Badges */
+    .badge-soft-success {
+      background-color: #d1fae5;
+      color: #065f46;
+      font-weight: 600;
+    }
+
+    .badge-soft-danger {
+      background-color: #fee2e2;
+      color: #991b1b;
+      font-weight: 600;
+    }
+
+    .badge-soft-info {
+      background-color: #e0f2fe;
+      color: #0369a1;
+      font-weight: 600;
+    }
+
+    /* Floating URL Configuration banner */
+    .config-banner {
+      background: #fef3c7;
+      border-left: 5px solid #f59e0b;
+      color: #92400e;
+      border-radius: 8px;
+      padding: 0.85rem 1.25rem;
+      margin-bottom: 1.5rem;
+      font-size: 0.9rem;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ==================== HEADER ==================== -->
+  <header class="app-header">
+    <div class="container">
+      <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+        <div class="d-flex align-items-center gap-3">
+          <div class="app-logo">
+            <i class="bi bi-person-bounding-box"></i>
+          </div>
+          <div>
+            <h1 class="h4 mb-0 fw-bold tracking-tight">Sistem Absensi Scan Wajah</h1>
+            <p class="mb-0 text-white-50 small">Pemerintah Desa • Presensi Mandiri AI & Geolocation Real-Time</p>
+          </div>
+        </div>
+
+        <div class="d-flex align-items-center gap-3">
+          <!-- Jam Digital Realtime -->
+          <div class="text-end d-none d-sm-block bg-white bg-opacity-10 px-3 py-2 rounded-3 border border-white border-opacity-10">
+            <div id="liveClock" class="fw-bold fs-5 font-monospace">00:00:00</div>
+            <div id="liveDate" class="small text-white-50">Memuat tanggal...</div>
+          </div>
+          <!-- Indikator Koneksi -->
+          <button class="btn btn-sm btn-outline-light d-flex align-items-center gap-2 rounded-pill px-3" data-bs-toggle="modal" data-bs-target="#settingsModal">
+            <span id="backendStatusDot" class="pulse-dot"></span>
+            <span id="backendStatusText" class="small fw-semibold">Backend Apps Script</span>
+            <i class="bi bi-gear-fill"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ==================== MAIN CONTENT CONTAINER ==================== -->
+  <main class="container my-4 flex-grow-1">
+
+    <!-- Banner Peringatan jika URL Apps Script Belum Dikonfigurasi -->
+    <div id="urlWarningBanner" class="config-banner d-none d-flex justify-content-between align-items-center">
+      <div>
+        <i class="bi bi-exclamation-triangle-fill me-2 fs-5"></i>
+        <strong>Perhatian:</strong> URL Google Apps Script belum diisi atau masih menggunakan template default.
+        Silakan klik <strong>Pengaturan</strong> untuk memasukkan URL Web App Anda.
+      </div>
+      <button class="btn btn-warning btn-sm fw-bold px-3" data-bs-toggle="modal" data-bs-target="#settingsModal">
+        <i class="bi bi-gear me-1"></i> Atur URL
+      </button>
+    </div>
+
+    <!-- Navigasi Tab Utama -->
+    <ul class="nav nav-tabs nav-tabs-custom mb-4" id="mainTab" role="tablist">
+      <li class="nav-item" role="presentation">
+        <button class="nav-link active" id="absensi-tab" data-bs-toggle="tab" data-bs-target="#absensi-tab-pane" type="button" role="tab">
+          <i class="bi bi-camera-fill text-primary"></i> 1. Absensi Scan Wajah
+        </button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="registrasi-tab" data-bs-toggle="tab" data-bs-target="#registrasi-tab-pane" type="button" role="tab">
+          <i class="bi bi-person-plus-fill text-success"></i> 2. Pendaftaran Wajah Baru
+        </button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="rekap-tab" data-bs-toggle="tab" data-bs-target="#rekap-tab-pane" type="button" role="tab">
+          <i class="bi bi-file-earmark-spreadsheet-fill text-info"></i> 3. Rekap & Export Laporan
+        </button>
+      </li>
+    </ul>
+
+    <!-- Isi Tab Content -->
+    <div class="tab-content" id="mainTabContent">
+
+      <!-- ==================== TAB 1: ABSENSI SCAN WAJAH ==================== -->
+      <div class="tab-pane fade show active" id="absensi-tab-pane" role="tabpanel">
+        <div class="row g-4">
+          
+          <!-- Kolom Kiri: Kamera Live & Deteksi Wajah -->
+          <div class="col-lg-7">
+            <div class="card card-custom p-3 p-md-4">
+              <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="fw-bold mb-0 text-primary d-flex align-items-center gap-2">
+                  <i class="bi bi-webcam"></i> Kamera Pemindai Wajah
+                </h5>
+                <div class="d-flex align-items-center gap-2">
+                  <button id="btnSwitchCamera" class="btn btn-sm btn-outline-secondary rounded-pill" title="Ganti Kamera">
+                    <i class="bi bi-arrow-repeat"></i> Balik Kamera
+                  </button>
+                  <button id="btnToggleScanner" class="btn btn-sm btn-primary rounded-pill px-3">
+                    <i class="bi bi-camera-video"></i> Mulai Kamera
+                  </button>
+                </div>
+              </div>
+
+              <!-- Pilihan Tipe Absensi: Masuk vs Pulang -->
+              <div class="mb-3">
+                <label class="form-label small fw-bold text-muted mb-1">Status Kehadiran:</label>
+                <div class="status-btn-group">
+                  <button type="button" class="btn btn-masuk active" id="btnStatusMasuk" onclick="setStatusAbsen('Masuk')">
+                    <i class="bi bi-box-arrow-in-right me-1"></i> Absen MASUK
+                  </button>
+                  <button type="button" class="btn btn-pulang" id="btnStatusPulang" onclick="setStatusAbsen('Pulang')">
+                    <i class="bi bi-box-arrow-right me-1"></i> Absen PULANG
+                  </button>
+                </div>
+              </div>
+
+              <!-- Viewport Kamera Live -->
+              <div class="camera-wrapper">
+                <div id="scannerOverlayBadge" class="camera-overlay-badge">
+                  <span class="spinner-grow spinner-grow-sm text-warning" role="status"></span>
+                  <span id="scannerStatusText">Memuat Model AI Wajah...</span>
+                </div>
+                <div class="camera-face-guide"></div>
+                <video id="scannerVideo" class="camera-video" autoplay playsinline muted></video>
+                <canvas id="scannerCanvas" class="camera-canvas"></canvas>
+              </div>
+
+              <!-- Petunjuk Posisi -->
+              <div class="mt-3 text-center text-muted small">
+                <i class="bi bi-info-circle me-1"></i> Arahkan wajah ke dalam lingkaran putus-putus. Pastikan pencahayaan cukup dan lepas masker/kacamata hitam.
+              </div>
+            </div>
+          </div>
+
+          <!-- Kolom Kanan: Hasil Pencocokan, GPS & Aksi Absensi -->
+          <div class="col-lg-5">
+            <div class="d-flex flex-column gap-3">
+              
+              <!-- Card Hasil Pengenalan Wajah -->
+              <div class="card card-custom p-4">
+                <h6 class="fw-bold text-secondary mb-3 text-uppercase small tracking-wide">
+                  <i class="bi bi-patch-check-fill text-success me-1"></i> Hasil Verifikasi Wajah
+                </h6>
+
+                <div id="recognitionBox" class="recognition-box unknown mb-3">
+                  <div class="d-flex align-items-center gap-3">
+                    <div id="recognitionAvatar" class="rounded-circle bg-secondary bg-opacity-25 d-flex align-items-center justify-content-center text-secondary" style="width: 58px; height: 58px; font-size: 1.8rem;">
+                      <i class="bi bi-person"></i>
+                    </div>
+                    <div class="flex-grow-1 overflow-hidden">
+                      <div class="text-muted small fw-semibold">Nama Perangkat:</div>
+                      <h5 id="recogNama" class="fw-bold mb-0 text-truncate text-dark">-</h5>
+                      <div class="text-muted small mt-1">Jabatan:</div>
+                      <div id="recogJabatan" class="fw-semibold text-primary text-truncate">-</div>
+                    </div>
+                  </div>
+
+                  <hr class="my-2 border-secondary border-opacity-25">
+
+                  <div class="d-flex justify-content-between align-items-center small mt-2">
+                    <span class="text-muted">Akurasi Kemiripan:</span>
+                    <span id="recogAccuracy" class="badge bg-secondary">-</span>
+                  </div>
+                </div>
+
+                <!-- Card Lokasi Geolocation (GPS) -->
+                <div class="bg-light p-3 rounded-3 border mb-3">
+                  <div class="d-flex justify-content-between align-items-center mb-1">
+                    <span class="small fw-bold text-dark">
+                      <i class="bi bi-geo-alt-fill text-danger me-1"></i> Titik Lokasi GPS
+                    </span>
+                    <button class="btn btn-link btn-sm p-0 text-decoration-none" onclick="refreshGeolocation()" title="Segarkan Titik GPS">
+                      <i class="bi bi-arrow-clockwise"></i> Segarkan GPS
+                    </button>
+                  </div>
+
+                  <div class="small text-muted mb-2" id="gpsStatusText">Mencari titik koordinat GPS...</div>
+
+                  <div class="row g-2 text-center font-monospace small">
+                    <div class="col-6">
+                      <div class="p-2 bg-white rounded border">
+                        <div class="text-muted" style="font-size: 0.75rem;">Latitude</div>
+                        <div id="gpsLat" class="fw-bold">-</div>
+                      </div>
+                    </div>
+                    <div class="col-6">
+                      <div class="p-2 bg-white rounded border">
+                        <div class="text-muted" style="font-size: 0.75rem;">Longitude</div>
+                        <div id="gpsLon" class="fw-bold">-</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="mt-2 text-end">
+                    <a id="btnLinkOsm" href="#" target="_blank" class="btn btn-outline-secondary btn-sm py-1 px-2 disabled" style="font-size: 0.8rem;">
+                      <i class="bi bi-map me-1"></i> Lihat di OpenStreetMap
+                    </a>
+                  </div>
+                </div>
+
+                <!-- Tombol Submit Absensi -->
+                <button id="btnKirimAbsen" class="btn btn-success btn-lg w-100 fw-bold py-3 shadow-sm d-flex align-items-center justify-content-center gap-2" disabled onclick="submitAbsensi()">
+                  <i class="bi bi-send-check-fill fs-5"></i>
+                  <span>Kirim Absensi Sekarang</span>
+                </button>
+
+                <div class="form-check form-switch mt-3 d-flex justify-content-center gap-2">
+                  <input class="form-check-input" type="checkbox" role="switch" id="switchAutoSubmit">
+                  <label class="form-check-label small text-muted" for="switchAutoSubmit">
+                    Absen Otomatis Saat Wajah Cocok (3 Detik)
+                  </label>
+                </div>
+              </div>
+
+              <!-- Statistik Singkat Hari Ini -->
+              <div class="card card-custom p-3 bg-white">
+                <div class="row g-2 text-center">
+                  <div class="col-6">
+                    <div class="p-2 rounded bg-primary bg-opacity-10 text-primary">
+                      <div class="small fw-semibold">Perangkat Terdaftar</div>
+                      <div id="statTotalUsers" class="h5 fw-bold mb-0">0</div>
+                    </div>
+                  </div>
+                  <div class="col-6">
+                    <div class="p-2 rounded bg-success bg-opacity-10 text-success">
+                      <div class="small fw-semibold">Absen Hari Ini</div>
+                      <div id="statTodayLogs" class="h5 fw-bold mb-0">0</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ==================== TAB 2: PENDAFTARAN WAJAH BARU ==================== -->
+      <div class="tab-pane fade" id="registrasi-tab-pane" role="tabpanel">
+        <div class="row g-4">
+          
+          <!-- Formulir Data Perangkat -->
+          <div class="col-lg-5">
+            <div class="card card-custom p-4">
+              <h5 class="fw-bold text-success mb-3 d-flex align-items-center gap-2">
+                <i class="bi bi-person-badge"></i> Data Perangkat Desa
+              </h5>
+              
+              <form id="formRegister" onsubmit="event.preventDefault();">
+                <div class="mb-3">
+                  <label class="form-label fw-semibold small">Nama Lengkap & Gelar <span class="text-danger">*</span></label>
+                  <input type="text" id="regNama" class="form-control" placeholder="Contoh: Budi Santoso, S.Sos" required>
+                </div>
+
+                <div class="mb-3">
+                  <label class="form-label fw-semibold small">Jabatan Pemerintahan Desa <span class="text-danger">*</span></label>
+                  <select id="regJabatan" class="form-select" required>
+                    <option value="" selected disabled>-- Pilih Jabatan --</option>
+                    <option value="Kepala Desa">Kepala Desa</option>
+                    <option value="Sekretaris Desa">Sekretaris Desa</option>
+                    <option value="Kaur Tata Usaha dan Umum">Kaur Tata Usaha dan Umum</option>
+                    <option value="Kaur Keuangan">Kaur Keuangan</option>
+                    <option value="Kaur Perencanaan">Kaur Perencanaan</option>
+                    <option value="Kasi Pemerintahan">Kasi Pemerintahan</option>
+                    <option value="Kasi Kesejahteraan">Kasi Kesejahteraan</option>
+                    <option value="Kasi Pelayanan">Kasi Pelayanan</option>
+                    <option value="Kepala Dusun I">Kepala Dusun I</option>
+                    <option value="Kepala Dusun II">Kepala Dusun II</option>
+                    <option value="Kepala Dusun III">Kepala Dusun III</option>
+                    <option value="Staf Administrasi">Staf Administrasi</option>
+                    <option value="Operator Desa">Operator Desa</option>
+                    <option value="Lainnya">Lainnya...</option>
+                  </select>
+                </div>
+
+                <div class="mb-3 d-none" id="customJabatanDiv">
+                  <label class="form-label fw-semibold small">Nama Jabatan Khusus</label>
+                  <input type="text" id="regCustomJabatan" class="form-control" placeholder="Tuliskan nama jabatan">
+                </div>
+
+                <!-- Status Rekam Wajah -->
+                <div class="p-3 bg-light rounded-3 border mb-3">
+                  <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="small fw-bold">Vektor Wajah (128 Angka):</span>
+                    <span id="badgeDescriptorStatus" class="badge bg-secondary">Belum Terekam</span>
+                  </div>
+                  <p class="small text-muted mb-2">
+                    Nyalakan kamera di samping, lalu klik tombol <strong>"Ambil & Rekam Wajah"</strong> ketika wajah sudah berada tepat di tengah frame.
+                  </p>
+                  <div id="previewSnapshotContainer" class="d-none text-center">
+                    <canvas id="previewSnapshotCanvas" class="rounded border shadow-sm" style="max-width: 130px;"></canvas>
+                  </div>
+                </div>
+
+                <button type="button" id="btnSimpanMaster" class="btn btn-success w-100 fw-bold py-2 shadow-sm d-flex align-items-center justify-content-center gap-2" disabled onclick="saveNewUserToBackend()">
+                  <i class="bi bi-cloud-arrow-up-fill"></i> Simpan ke Google Sheets
+                </button>
+              </form>
+            </div>
+          </div>
+
+          <!-- Kamera Registrasi Wajah -->
+          <div class="col-lg-7">
+            <div class="card card-custom p-4">
+              <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="fw-bold mb-0 text-dark d-flex align-items-center gap-2">
+                  <i class="bi bi-camera-fill text-success"></i> Kamera Perekam Sampel Wajah
+                </h5>
+                <button id="btnToggleRegCamera" class="btn btn-sm btn-outline-success rounded-pill px-3">
+                  <i class="bi bi-camera-video"></i> Buka Kamera
+                </button>
+              </div>
+
+              <div class="camera-wrapper">
+                <div id="regOverlayBadge" class="camera-overlay-badge">
+                  <span class="spinner-grow spinner-grow-sm text-info" role="status"></span>
+                  <span id="regStatusText">Kamera Belum Aktif</span>
+                </div>
+                <div class="camera-face-guide"></div>
+                <video id="regVideo" class="camera-video" autoplay playsinline muted></video>
+                <canvas id="regCanvas" class="camera-canvas"></canvas>
+              </div>
+
+              <div class="mt-3 text-center">
+                <button id="btnCaptureFace" class="btn btn-primary btn-lg rounded-pill px-4 fw-bold shadow-sm" disabled onclick="captureRegistrationFace()">
+                  <i class="bi bi-camera me-1"></i> Ambil & Rekam Wajah
+                </button>
+              </div>
+
+              <!-- Daftar Perangkat yang Sudah Terdaftar -->
+              <div class="mt-4 pt-3 border-top">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                  <h6 class="fw-bold mb-0 text-secondary">
+                    <i class="bi bi-people-fill me-1"></i> Perangkat Terdaftar Saat Ini (<span id="userCountBadge">0</span>)
+                  </h6>
+                  <button class="btn btn-link btn-sm p-0 text-decoration-none" onclick="loadRegisteredUsers(true)">
+                    <i class="bi bi-arrow-clockwise"></i> Muat Ulang
+                  </button>
+                </div>
+                <div class="table-responsive" style="max-height: 220px;">
+                  <table class="table table-sm table-hover align-middle small mb-0">
+                    <thead class="table-light sticky-top">
+                      <tr>
+                        <th>ID</th>
+                        <th>Nama</th>
+                        <th>Jabatan</th>
+                        <th>Tgl Daftar</th>
+                        <th class="text-center">Aksi</th>
+                      </tr>
+                    </thead>
+                    <tbody id="registeredUsersTbody">
+                      <tr>
+                        <td colspan="5" class="text-center text-muted py-3">Memuat data perangkat...</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ==================== TAB 3: REKAP & EXPORT LAPORAN ==================== -->
+      <div class="tab-pane fade" id="rekap-tab-pane" role="tabpanel">
+        <div class="card card-custom p-4">
+          
+          <!-- Toolbar Header & Export Buttons -->
+          <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+            <div>
+              <h5 class="fw-bold mb-1 text-primary">
+                <i class="bi bi-clipboard2-data-fill me-1"></i> Rekapitulasi Presensi Perangkat Desa
+              </h5>
+              <p class="text-muted small mb-0">Laporan riwayat kehadiran yang tersimpan di Google Sheets secara real-time.</p>
+            </div>
+            
+            <div class="d-flex flex-wrap gap-2">
+              <button class="btn btn-outline-secondary btn-sm" onclick="fetchAttendanceLogs(true)">
+                <i class="bi bi-arrow-clockwise me-1"></i> Refresh Data
+              </button>
+              <button class="btn btn-success btn-sm fw-semibold shadow-sm" onclick="exportToExcel()">
+                <i class="bi bi-file-earmark-excel-fill me-1"></i> Download Excel (.xlsx)
+              </button>
+              <button class="btn btn-danger btn-sm fw-semibold shadow-sm" onclick="exportToPDF()">
+                <i class="bi bi-file-earmark-pdf-fill me-1"></i> Download PDF Resmi (.pdf)
+              </button>
+            </div>
+          </div>
+
+          <!-- Filter & Pencarian -->
+          <div class="row g-2 mb-3 bg-light p-3 rounded-3 border">
+            <div class="col-md-4">
+              <label class="form-label small fw-semibold mb-1">Cari Nama / Jabatan:</label>
+              <div class="input-group input-group-sm">
+                <span class="input-group-text"><i class="bi bi-search"></i></span>
+                <input type="text" id="filterKeyword" class="form-control" placeholder="Ketik kata kunci..." oninput="applyLogFilters()">
+              </div>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label small fw-semibold mb-1">Filter Status:</label>
+              <select id="filterStatus" class="form-select form-select-sm" onchange="applyLogFilters()">
+                <option value="ALL">Semua Status</option>
+                <option value="Masuk">Masuk</option>
+                <option value="Pulang">Pulang</option>
+              </select>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label small fw-semibold mb-1">Filter Tanggal:</label>
+              <input type="date" id="filterTanggal" class="form-control form-control-sm" onchange="applyLogFilters()">
+            </div>
+            <div class="col-md-2 d-flex align-items-end">
+              <button class="btn btn-outline-dark btn-sm w-100" onclick="resetLogFilters()">
+                <i class="bi bi-x-circle me-1"></i> Reset Filter
+              </button>
+            </div>
+          </div>
+
+          <!-- Tabel Rekap Absensi -->
+          <div class="table-responsive">
+            <table class="table table-hover align-middle" id="tableRekap">
+              <thead class="table-light">
+                <tr class="small text-uppercase tracking-wider">
+                  <th style="width: 50px;">No</th>
+                  <th>Waktu & Tanggal</th>
+                  <th>Nama Perangkat</th>
+                  <th>Jabatan</th>
+                  <th>Status</th>
+                  <th>Koordinat GPS</th>
+                  <th class="text-center">Peta Lokasi</th>
+                </tr>
+              </thead>
+              <tbody id="logsTbody">
+                <tr>
+                  <td colspan="7" class="text-center py-4 text-muted">
+                    <div class="spinner-border spinner-border-sm text-primary me-2"></div>
+                    Memuat riwayat absensi dari Google Sheets...
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- ==================== FOOTER ==================== -->
+  <footer class="bg-white border-top py-3 mt-auto">
+    <div class="container text-center text-muted small">
+      <div class="d-flex flex-wrap justify-content-between align-items-center">
+        <span>&copy; <span id="currentYear"></span> Sistem Absensi Wajah Perangkat Desa • Client-Side Face Recognition (face-api.js)</span>
+        <span>Akses Kamera & GPS Mandiri (No Iframe Sandbox)</span>
+      </div>
+    </div>
+  </footer>
+
+  <!-- ==================== MODAL PENGATURAN / BACKEND URL ==================== -->
+  <div class="modal fade" id="settingsModal" tabindex="-1" aria-labelledby="settingsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title fw-bold" id="settingsModalLabel">
+            <i class="bi bi-gear-fill text-primary me-2"></i>Pengaturan Koneksi Backend
+          </h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <p class="small text-muted">
+            Aplikasi frontend ini berkomunikasi langsung dengan Google Apps Script Anda melalui metode HTTP POST tanpa server berbayar.
+          </p>
+
+          <div class="mb-3">
+            <label class="form-label fw-semibold small">Google Apps Script Web App URL (/exec):</label>
+            <input type="url" id="inputBackendUrl" class="form-control font-monospace small" placeholder="https://script.google.com/macros/s/.../exec">
+            <div class="form-text small">
+              Diperoleh dari menu <strong>Deploy > New Deployment > Web App (Anyone)</strong> pada Google Sheets Apps Script Anda.
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-semibold small">Nama Desa / Instansi (Untuk Kop Laporan PDF):</label>
+            <input type="text" id="inputNamaDesa" class="form-control" placeholder="Contoh: DESA SUKAMAJU, KECAMATAN MAKMUR">
+          </div>
+
+          <div class="alert alert-info small py-2">
+            <i class="bi bi-info-circle-fill me-1"></i> Konfigurasi ini tersimpan secara lokal di browser Anda (LocalStorage) sehingga Anda tidak perlu mengedit file kode berulang kali.
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Tutup</button>
+          <button type="button" class="btn btn-primary fw-bold" onclick="saveSettings()">Simpan Konfigurasi</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== EXTERNAL JAVASCRIPT LIBRARIES ==================== -->
+  <!-- Bootstrap 5 JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <!-- SweetAlert2 JS -->
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <!-- Face-API.js CDN (Client-side Face Recognition) -->
+  <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
+  <!-- SheetJS (Excel Export) -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <!-- jsPDF & jsPDF-AutoTable (PDF Export) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+
+  <!-- ==================== APPLICATION LOGIC ==================== -->
+  <script>
+    /**
+     * ==========================================================================
+     * KONFIGURASI UTAMA APLIKASI
+     * ==========================================================================
+     * Ganti URL di bawah ini dengan URL hasil Deploy Apps Script Anda,
+     * ATAU simpan melalui menu tombol Pengaturan (ikon gear) di kanan atas.
+     */
+    const GAS_WEB_APP_URL = "URL_DEPLOY_APPS_SCRIPT";
+
+    // URL Penyedia Model Face-API.js
+    const FACE_MODEL_URL = "https://justadudewhohacks.github.io/face-api.js/models";
+    const FACE_MODEL_BACKUP_URL = "https://cdn.jsdelivr.net/gh/cgarciagl/face-api.js@master/weights";
+
+    // Global State
+    let activeBackendUrl = localStorage.getItem("DESA_GAS_URL") || GAS_WEB_APP_URL;
+    let namaDesaConfig = localStorage.getItem("DESA_NAMA") || "DESA MAKMUR SEJAHTERA";
+
+    let modelsLoaded = false;
+    let registeredUsers = [];
+    let faceMatcher = null;
+    let currentStatusAbsen = "Masuk";
+
+    // Scanner state
+    let scannerStream = null;
+    let isScannerRunning = false;
+    let scannerInterval = null;
+    let currentFacingMode = "user"; // "user" atau "environment"
+    let matchedOfficial = null; // Data perangkat yang saat ini cocok
+    let autoSubmitCooldown = false;
+    let autoSubmitTimer = null;
+
+    // Registration state
+    let regStream = null;
+    let isRegRunning = false;
+    let regInterval = null;
+    let capturedDescriptor = null;
+
+    // GPS state
+    let currentGps = { lat: null, lon: null, accuracy: null, linkOsm: null };
+
+    // Audio Synthesizer (Zero asset dependensi suara)
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    function playBeep(type = "success") {
+      try {
+        if (audioCtx.state === "suspended") audioCtx.resume();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+
+        if (type === "success") {
+          osc.frequency.setValueAtTime(587.33, audioCtx.currentTime); // D5
+          osc.frequency.exponentialRampToValueAtTime(880, audioCtx.currentTime + 0.15); // A5
+          gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.25);
+          osc.start();
+          osc.stop(audioCtx.currentTime + 0.25);
+        } else if (type === "capture") {
+          osc.frequency.setValueAtTime(440, audioCtx.currentTime);
+          gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.12);
+          osc.start();
+          osc.stop(audioCtx.currentTime + 0.12);
+        } else {
+          osc.frequency.setValueAtTime(220, audioCtx.currentTime);
+          gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+          osc.start();
+          osc.stop(audioCtx.currentTime + 0.3);
+        }
+      } catch (e) {
+        console.warn("Audio Context tidak diizinkan atau tidak didukung:", e);
+      }
+    }
+
+    // ==========================================================================
+    // INISIALISASI HALAMAN SAAT PERTAMA KALI DIBUKA
+    // ==========================================================================
+    document.addEventListener("DOMContentLoaded", async () => {
+      // Inisialisasi Jam & Tanggal
+      initClock();
+      document.getElementById("currentYear").textContent = new Date().getFullYear();
+
+      // Isi input modal pengaturan
+      document.getElementById("inputBackendUrl").value = activeBackendUrl;
+      document.getElementById("inputNamaDesa").value = namaDesaConfig;
+
+      // Periksa apakah URL masih default
+      checkUrlConfig();
+
+      // Jalankan GPS otomatis di awal
+      refreshGeolocation();
+
+      // Setup Event Listeners
+      setupEventListeners();
+
+      // Muat Model Face-API.js
+      await loadFaceModels();
+
+      // Muat data master perangkat dari Google Sheets
+      if (isValidBackendUrl(activeBackendUrl)) {
+        await loadRegisteredUsers();
+        await fetchAttendanceLogs();
+      }
+    });
+
+    function checkUrlConfig() {
+      const banner = document.getElementById("urlWarningBanner");
+      if (!isValidBackendUrl(activeBackendUrl)) {
+        banner.classList.remove("d-none");
+        updateBackendIndicator(false, "URL Belum Diset");
+      } else {
+        banner.classList.add("d-none");
+        updateBackendIndicator(true, "Terhubung ke Apps Script");
+      }
+    }
+
+    function isValidBackendUrl(url) {
+      return url && url !== "URL_DEPLOY_APPS_SCRIPT" && url.startsWith("https://script.google.com");
+    }
+
+    function updateBackendIndicator(isOk, text) {
+      const dot = document.getElementById("backendStatusDot");
+      const label = document.getElementById("backendStatusText");
+      if (isOk) {
+        dot.className = "pulse-dot";
+        label.textContent = text || "Online";
+      } else {
+        dot.className = "pulse-dot danger";
+        label.textContent = text || "Offline / Belum Dikonfigurasi";
+      }
+    }
+
+    function initClock() {
+      const clockEl = document.getElementById("liveClock");
+      const dateEl = document.getElementById("liveDate");
+
+      function update() {
+        const now = new Date();
+        clockEl.textContent = now.toLocaleTimeString("id-ID", { hour12: false });
+        dateEl.textContent = now.toLocaleDateString("id-ID", {
+          weekday: "long",
+          year: "numeric",
+          month: "short",
+          day: "numeric"
+        });
+      }
+      update();
+      setInterval(update, 1000);
+    }
+
+    function setupEventListeners() {
+      // Switch Status Masuk / Pulang
+      document.getElementById("btnToggleScanner").addEventListener("click", toggleScanner);
+      document.getElementById("btnSwitchCamera").addEventListener("click", switchCameraFacing);
+      document.getElementById("btnToggleRegCamera").addEventListener("click", toggleRegistrationCamera);
+
+      // Dropdown jabatan jika pilih Lainnya
+      document.getElementById("regJabatan").addEventListener("change", (e) => {
+        const customDiv = document.getElementById("customJabatanDiv");
+        if (e.target.value === "Lainnya") {
+          customDiv.classList.remove("d-none");
+          document.getElementById("regCustomJabatan").required = true;
+        } else {
+          customDiv.classList.add("d-none");
+          document.getElementById("regCustomJabatan").required = false;
+        }
+      });
+
+      // Hentikan kamera tab sebelumnya saat ganti tab agar kamera tidak bentrok
+      const tabElements = document.querySelectorAll('button[data-bs-toggle="tab"]');
+      tabElements.forEach(tab => {
+        tab.addEventListener('hidden.bs.tab', (event) => {
+          if (event.target.id === 'absensi-tab') {
+            stopScannerCamera();
+          } else if (event.target.id === 'registrasi-tab') {
+            stopRegistrationCamera();
+          }
+        });
+      });
+    }
+
+    // ==========================================================================
+    // PEMUATAN MODEL AI FACE-API.JS
+    // ==========================================================================
+    async function loadFaceModels() {
+      const overlayBadge = document.getElementById("scannerStatusText");
+      overlayBadge.textContent = "Mengunduh Model AI Wajah...";
+
+      try {
+        await Promise.all([
+          faceapi.nets.tinyFaceDetector.loadFromUri(FACE_MODEL_URL),
+          faceapi.nets.faceLandmark68Net.loadFromUri(FACE_MODEL_URL),
+          faceapi.nets.faceRecognitionNet.loadFromUri(FACE_MODEL_URL)
+        ]);
+        modelsLoaded = true;
+        overlayBadge.textContent = "Model AI Siap. Klik 'Mulai Kamera'";
+        console.log("Model face-api.js berhasil dimuat!");
+      } catch (err) {
+        console.warn("Gagal memuat dari sumber utama, mencoba mirror backup...", err);
+        try {
+          await Promise.all([
+            faceapi.nets.tinyFaceDetector.loadFromUri(FACE_MODEL_BACKUP_URL),
+            faceapi.nets.faceLandmark68Net.loadFromUri(FACE_MODEL_BACKUP_URL),
+            faceapi.nets.faceRecognitionNet.loadFromUri(FACE_MODEL_BACKUP_URL)
+          ]);
+          modelsLoaded = true;
+          overlayBadge.textContent = "Model AI Siap. Klik 'Mulai Kamera'";
+          console.log("Model face-api.js berhasil dimuat dari backup mirror!");
+        } catch (backupErr) {
+          modelsLoaded = false;
+          overlayBadge.textContent = "Gagal memuat Model AI!";
+          console.error("Gagal memuat model face-api:", backupErr);
+          Swal.fire({
+            icon: 'error',
+            title: 'Koneksi Model AI Gagal',
+            text: 'Tidak dapat mengunduh model neural network wajah. Pastikan koneksi internet Anda aktif dan tidak memblokir CDN.',
+          });
+        }
+      }
+    }
+
+    // ==========================================================================
+    // KOMUNIKASI API GOOGLE APPS SCRIPT (CORS COMPLIANT DENGAN TEXT/PLAIN)
+    // ==========================================================================
+    async function callAppsScriptApi(payload) {
+      if (!isValidBackendUrl(activeBackendUrl)) {
+        throw new Error("URL Google Apps Script belum dikonfigurasi.");
+      }
+
+      // Menggunakan Content-Type text/plain;charset=utf-8 untuk menghindari CORS preflight OPTIONS
+      const response = await fetch(activeBackendUrl, {
+        method: "POST",
+        mode: "cors",
+        redirect: "follow",
+        headers: {
+          "Content-Type": "text/plain;charset=utf-8"
+        },
+        body: JSON.stringify(payload)
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP Error status: ${response.status}`);
+      }
+
+      const result = await response.json();
+      return result;
+    }
+
+    // ==========================================================================
+    // MASTER PERANGKAT: MEMUAT & MEMBUAT FACE MATCHER
+    // ==========================================================================
+    async function loadRegisteredUsers(showToast = false) {
+      try {
+        const res = await callAppsScriptApi({ action: "getUsers" });
+        if (res.status === "success") {
+          registeredUsers = res.data || [];
+          document.getElementById("statTotalUsers").textContent = registeredUsers.length;
+          document.getElementById("userCountBadge").textContent = registeredUsers.length;
+          
+          buildFaceMatcher();
+          renderRegisteredUsersTable();
+
+          if (showToast) {
+            Swal.fire({
+              toast: true,
+              position: 'top-end',
+              icon: 'success',
+              title: `Berhasil memuat ${registeredUsers.length} perangkat terdaftar`,
+              showConfirmButton: false,
+              timer: 2500
+            });
+          }
+        }
+      } catch (err) {
+        console.error("Gagal memuat data master perangkat:", err);
+      }
+    }
+
+    function buildFaceMatcher() {
+      if (!registeredUsers || registeredUsers.length === 0) {
+        faceMatcher = null;
+        return;
+      }
+
+      const labeledDescriptors = [];
+
+      for (const u of registeredUsers) {
+        if (u.descriptor && Array.isArray(u.descriptor) && u.descriptor.length === 128) {
+          const floatArray = new Float32Array(u.descriptor);
+          // Format label: Nama:::Jabatan:::ID
+          const label = `${u.nama}:::${u.jabatan}:::${u.id}`;
+          labeledDescriptors.push(new faceapi.LabeledFaceDescriptors(label, [floatArray]));
+        }
+      }
+
+      if (labeledDescriptors.length > 0) {
+        // Toleransi Euclidean Distance: 0.52 (nilai lebih kecil = lebih ketat/akurat)
+        faceMatcher = new faceapi.FaceMatcher(labeledDescriptors, 0.52);
+        console.log(`FaceMatcher siap dengan ${labeledDescriptors.length} profil wajah!`);
+      } else {
+        faceMatcher = null;
+      }
+    }
+
+    function renderRegisteredUsersTable() {
+      const tbody = document.getElementById("registeredUsersTbody");
+      if (registeredUsers.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" class="text-center text-muted py-3">Belum ada perangkat desa yang terdaftar. Silakan rekam wajah pertama di atas!</td></tr>`;
+        return;
+      }
+
+      let html = "";
+      registeredUsers.forEach(u => {
+        html += `
+          <tr>
+            <td class="font-monospace text-muted">${escapeHtml(u.id)}</td>
+            <td class="fw-bold">${escapeHtml(u.nama)}</td>
+            <td><span class="badge bg-light text-dark border">${escapeHtml(u.jabatan)}</span></td>
+            <td class="small text-muted">${escapeHtml(u.tanggalDaftar || "-")}</td>
+            <td class="text-center">
+              <button class="btn btn-outline-danger btn-sm py-0 px-2" title="Hapus Data" onclick="deleteUser('${escapeHtml(u.id)}', '${escapeHtml(u.nama)}')">
+                <i class="bi bi-trash"></i>
+              </button>
+            </td>
+          </tr>
+        `;
+      });
+      tbody.innerHTML = html;
+    }
+
+    async function deleteUser(id, nama) {
+      const confirm = await Swal.fire({
+        title: `Hapus Data?`,
+        text: `Apakah Anda yakin ingin menghapus perangkat "${nama}"?`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#ef4444',
+        cancelButtonColor: '#64748b',
+        confirmButtonText: 'Ya, Hapus!',
+        cancelButtonText: 'Batal'
+      });
+
+      if (!confirm.isConfirmed) return;
+
+      Swal.fire({
+        title: 'Menghapus...',
+        allowOutsideClick: false,
+        didOpen: () => Swal.showLoading()
+      });
+
+      try {
+        const res = await callAppsScriptApi({ action: "deleteUser", id: id });
+        if (res.status === "success") {
+          Swal.fire('Terhapus!', res.message, 'success');
+          await loadRegisteredUsers();
+        } else {
+          Swal.fire('Gagal!', res.message, 'error');
+        }
+      } catch (err) {
+        Swal.fire('Error!', err.message, 'error');
+      }
+    }
+
+    // ==========================================================================
+    // TAB 1: LOGIKA SCANNER ABSENSI
+    // ==========================================================================
+    function setStatusAbsen(status) {
+      currentStatusAbsen = status;
+      const btnMasuk = document.getElementById("btnStatusMasuk");
+      const btnPulang = document.getElementById("btnStatusPulang");
+
+      if (status === "Masuk") {
+        btnMasuk.classList.add("active");
+        btnPulang.classList.remove("active");
+      } else {
+        btnPulang.classList.add("active");
+        btnMasuk.classList.remove("active");
+      }
+    }
+
+    async function toggleScanner() {
+      if (isScannerRunning) {
+        stopScannerCamera();
+      } else {
+        await startScannerCamera();
+      }
+    }
+
+    async function switchCameraFacing() {
+      currentFacingMode = (currentFacingMode === "user") ? "environment" : "user";
+      if (isScannerRunning) {
+        stopScannerCamera();
+        await startScannerCamera();
+      }
+    }
+
+    async function startScannerCamera() {
+      if (!modelsLoaded) {
+        Swal.fire('Tunggu Sebentar', 'Model AI Wajah masih dimuat. Silakan coba 5 detik lagi.', 'info');
+        return;
+      }
+
+      const video = document.getElementById("scannerVideo");
+      const canvas = document.getElementById("scannerCanvas");
+      const btn = document.getElementById("btnToggleScanner");
+      const statusText = document.getElementById("scannerStatusText");
+
+      try {
+        const constraints = {
+          video: {
+            facingMode: currentFacingMode,
+            width: { ideal: 640 },
+            height: { ideal: 480 }
+          },
+          audio: false
+        };
+
+        scannerStream = await navigator.mediaDevices.getUserMedia(constraints);
+        video.srcObject = scannerStream;
+
+        video.onloadedmetadata = () => {
+          video.play();
+          isScannerRunning = true;
+          btn.innerHTML = `<i class="bi bi-stop-circle"></i> Hentikan`;
+          btn.classList.replace("btn-primary", "btn-outline-danger");
+          statusText.textContent = "Mencari Wajah...";
+          runFaceRecognitionLoop();
+        };
+
+      } catch (err) {
+        console.error("Gagal membuka kamera scanner:", err);
+        Swal.fire({
+          icon: 'error',
+          title: 'Kamera Gagal Dibuka',
+          text: 'Pastikan Anda memberikan izin akses kamera (Allow Camera) di browser dan gunakan HTTPS.',
+        });
+      }
+    }
+
+    function stopScannerCamera() {
+      if (scannerStream) {
+        scannerStream.getTracks().forEach(track => track.stop());
+        scannerStream = null;
+      }
+      if (scannerInterval) {
+        clearInterval(scannerInterval);
+        scannerInterval = null;
+      }
+      isScannerRunning = false;
+
+      const video = document.getElementById("scannerVideo");
+      video.srcObject = null;
+
+      const canvas = document.getElementById("scannerCanvas");
+      const ctx = canvas.getContext("2d");
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      const btn = document.getElementById("btnToggleScanner");
+      btn.innerHTML = `<i class="bi bi-camera-video"></i> Mulai Kamera`;
+      btn.classList.replace("btn-outline-danger", "btn-primary");
+      document.getElementById("scannerStatusText").textContent = "Kamera Berhenti";
+
+      resetRecognitionDisplay();
+    }
+
+    function runFaceRecognitionLoop() {
+      const video = document.getElementById("scannerVideo");
+      const canvas = document.getElementById("scannerCanvas");
+
+      // Deteksi setiap 250ms agar hemat CPU & baterai
+      scannerInterval = setInterval(async () => {
+        if (!isScannerRunning || video.paused || video.ended) return;
+
+        const displaySize = { width: video.videoWidth, height: video.videoHeight };
+        if (displaySize.width === 0 || displaySize.height === 0) return;
+
+        faceapi.matchDimensions(canvas, displaySize);
+
+        try {
+          // Deteksi wajah tunggal dengan landmarks dan descriptor
+          const detection = await faceapi
+            .detectSingleFace(video, new faceapi.TinyFaceDetectorOptions({ inputSize: 320, scoreThreshold: 0.5 }))
+            .withFaceLandmarks()
+            .withFaceDescriptor();
+
+          const ctx = canvas.getContext("2d");
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+          if (detection) {
+            const resizedDetection = faceapi.resizeResults(detection, displaySize);
+            
+            // Gambar kotak wajah
+            const box = resizedDetection.detection.box;
+            ctx.strokeStyle = "#10b981";
+            ctx.lineWidth = 3;
+            ctx.strokeRect(box.x, box.y, box.width, box.height);
+
+            if (faceMatcher) {
+              const bestMatch = faceMatcher.findBestMatch(detection.descriptor);
+
+              if (bestMatch.label !== "unknown") {
+                // Berhasil dikenali
+                const parts = bestMatch.label.split(":::");
+                const matchedName = parts[0] || "Unknown";
+                const matchedJabatan = parts[1] || "-";
+                const matchedId = parts[2] || "-";
+                const distance = bestMatch.distance;
+                const accuracy = Math.max(0, Math.round((1 - distance) * 100));
+
+                showRecognizedOfficial({
+                  id: matchedId,
+                  nama: matchedName,
+                  jabatan: matchedJabatan,
+                  accuracy: accuracy + "%"
+                });
+
+                document.getElementById("scannerStatusText").textContent = `Dikenali: ${matchedName}`;
+              } else {
+                // Wajah terdeteksi tapi belum terdaftar di database
+                showUnknownOfficial();
+                document.getElementById("scannerStatusText").textContent = "Wajah Belum Terdaftar";
+              }
+            } else {
+              document.getElementById("scannerStatusText").textContent = "Wajah Terdeteksi (Belum Ada Data Master)";
+            }
+
+          } else {
+            // Tidak ada wajah di frame
+            resetRecognitionDisplay();
+            document.getElementById("scannerStatusText").textContent = "Arahkan Wajah ke Kamera...";
+          }
+        } catch (err) {
+          console.warn("Frame detection error:", err);
+        }
+      }, 250);
+    }
+
+    function showRecognizedOfficial(data) {
+      matchedOfficial = data;
+
+      const box = document.getElementById("recognitionBox");
+      box.className = "recognition-box recognized mb-3";
+
+      const avatar = document.getElementById("recognitionAvatar");
+      avatar.className = "rounded-circle bg-success bg-opacity-25 d-flex align-items-center justify-content-center text-success";
+      avatar.innerHTML = `<i class="bi bi-person-check-fill"></i>`;
+
+      document.getElementById("recogNama").textContent = data.nama;
+      document.getElementById("recogJabatan").textContent = data.jabatan;
+
+      const badgeAcc = document.getElementById("recogAccuracy");
+      badgeAcc.className = "badge bg-success";
+      badgeAcc.textContent = `Cocok (${data.accuracy})`;
+
+      // Aktifkan tombol kirim absen
+      document.getElementById("btnKirimAbsen").disabled = false;
+
+      // Handle Auto Submit jika diaktifkan
+      const autoSubmitSwitch = document.getElementById("switchAutoSubmit").checked;
+      if (autoSubmitSwitch && !autoSubmitCooldown) {
+        autoSubmitCooldown = true;
+        playBeep("success");
+        submitAbsensi(true);
+        setTimeout(() => { autoSubmitCooldown = false; }, 6000); // 6 detik cooldown
+      }
+    }
+
+    function showUnknownOfficial() {
+      matchedOfficial = null;
+      const box = document.getElementById("recognitionBox");
+      box.className = "recognition-box unknown mb-3";
+
+      const avatar = document.getElementById("recognitionAvatar");
+      avatar.className = "rounded-circle bg-warning bg-opacity-25 d-flex align-items-center justify-content-center text-warning";
+      avatar.innerHTML = `<i class="bi bi-person-exclamation"></i>`;
+
+      document.getElementById("recogNama").textContent = "Wajah Tidak Dikenali";
+      document.getElementById("recogJabatan").textContent = "Silakan daftar di Tab Registrasi";
+
+      const badgeAcc = document.getElementById("recogAccuracy");
+      badgeAcc.className = "badge bg-warning text-dark";
+      badgeAcc.textContent = "Tidak Cocok";
+
+      document.getElementById("btnKirimAbsen").disabled = true;
+    }
+
+    function resetRecognitionDisplay() {
+      matchedOfficial = null;
+      const box = document.getElementById("recognitionBox");
+      box.className = "recognition-box mb-3";
+
+      const avatar = document.getElementById("recognitionAvatar");
+      avatar.className = "rounded-circle bg-secondary bg-opacity-25 d-flex align-items-center justify-content-center text-secondary";
+      avatar.innerHTML = `<i class="bi bi-person"></i>`;
+
+      document.getElementById("recogNama").textContent = "-";
+      document.getElementById("recogJabatan").textContent = "-";
+
+      const badgeAcc = document.getElementById("recogAccuracy");
+      badgeAcc.className = "badge bg-secondary";
+      badgeAcc.textContent = "-";
+
+      document.getElementById("btnKirimAbsen").disabled = true;
+    }
+
+    // ==========================================================================
+    // GEOLOCATION (GPS) & OPENSTREETMAP
+    // ==========================================================================
+    function refreshGeolocation() {
+      const gpsStatus = document.getElementById("gpsStatusText");
+      const latEl = document.getElementById("gpsLat");
+      const lonEl = document.getElementById("gpsLon");
+      const btnOsm = document.getElementById("btnLinkOsm");
+
+      if (!navigator.geolocation) {
+        gpsStatus.textContent = "Geolocation tidak didukung oleh browser ini.";
+        return;
+      }
+
+      gpsStatus.innerHTML = `<span class="spinner-border spinner-border-sm text-primary"></span> Mengambil koordinat GPS presisi...`;
+
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          const lat = pos.coords.latitude.toFixed(6);
+          const lon = pos.coords.longitude.toFixed(6);
+          const acc = Math.round(pos.coords.accuracy);
+
+          currentGps = {
+            lat: lat,
+            lon: lon,
+            accuracy: acc,
+            linkOsm: `https://www.openstreetmap.org/?mlat=${lat}&mlon=${lon}#map=18/${lat}/${lon}`
+          };
+
+          latEl.textContent = lat;
+          lonEl.textContent = lon;
+          gpsStatus.innerHTML = `<i class="bi bi-check-circle-fill text-success"></i> GPS Terkunci (Akurasi ±${acc} meter)`;
+
+          btnOsm.href = currentGps.linkOsm;
+          btnOsm.classList.remove("disabled");
+        },
+        (err) => {
+          console.warn("GPS Error:", err);
+          gpsStatus.innerHTML = `<span class="text-danger"><i class="bi bi-exclamation-circle"></i> Izin lokasi ditolak / GPS mati.</span>`;
+          currentGps = { lat: "-", lon: "-", accuracy: null, linkOsm: "-" };
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 0
+        }
+      );
+    }
+
+    // ==========================================================================
+    // PENGIRIMAN ABSENSI KE GOOGLE APPS SCRIPT
+    // ==========================================================================
+    async function submitAbsensi(isAuto = false) {
+      if (!matchedOfficial) {
+        Swal.fire('Wajah Belum Terdeteksi', 'Posisikan wajah Anda hingga dikenali oleh sistem.', 'warning');
+        return;
+      }
+
+      const btn = document.getElementById("btnKirimAbsen");
+      btn.disabled = true;
+      btn.innerHTML = `<span class="spinner-border spinner-border-sm"></span> Menyimpan Absensi...`;
+
+      const payload = {
+        action: "submitAttendance",
+        nama: matchedOfficial.nama,
+        jabatan: matchedOfficial.jabatan,
+        status: currentStatusAbsen,
+        latitude: currentGps.lat || "-",
+        longitude: currentGps.lon || "-"
+      };
+
+      try {
+        const result = await callAppsScriptApi(payload);
+
+        if (result.status === "success") {
+          playBeep("success");
+
+          Swal.fire({
+            icon: 'success',
+            title: `Absen ${currentStatusAbsen} Berhasil!`,
+            html: `
+              <div class="text-start p-3 bg-light rounded mt-2 small">
+                <div><strong>Nama:</strong> ${escapeHtml(matchedOfficial.nama)}</div>
+                <div><strong>Jabatan:</strong> ${escapeHtml(matchedOfficial.jabatan)}</div>
+                <div><strong>Waktu:</strong> ${result.data ? result.data.waktu : new Date().toLocaleTimeString()}</div>
+                <div><strong>Status:</strong> <span class="badge ${currentStatusAbsen === 'Masuk' ? 'bg-success' : 'bg-danger'}">${currentStatusAbsen}</span></div>
+                <div><strong>Lokasi:</strong> ${currentGps.lat}, ${currentGps.lon}</div>
+              </div>
+            `,
+            timer: 3500,
+            showConfirmButton: false
+          });
+
+          // Segarkan data log
+          fetchAttendanceLogs();
+
+        } else {
+          playBeep("error");
+          Swal.fire('Gagal!', result.message || 'Terjadi kesalahan saat menyimpan ke database.', 'error');
+        }
+      } catch (err) {
+        playBeep("error");
+        console.error("Gagal mengirim absensi:", err);
+        Swal.fire('Koneksi Gagal', 'Tidak dapat mengirim absensi ke Google Apps Script: ' + err.message, 'error');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = `<i class="bi bi-send-check-fill fs-5"></i> <span>Kirim Absensi Sekarang</span>`;
+      }
+    }
+
+    // ==========================================================================
+    // TAB 2: LOGIKA PENDAFTARAN WAJAH BARU
+    // ==========================================================================
+    async function toggleRegistrationCamera() {
+      if (isRegRunning) {
+        stopRegistrationCamera();
+      } else {
+        await startRegistrationCamera();
+      }
+    }
+
+    async function startRegistrationCamera() {
+      if (!modelsLoaded) {
+        Swal.fire('Mohon Tunggu', 'Model AI masih dimuat. Coba beberapa saat lagi.', 'info');
+        return;
+      }
+
+      const video = document.getElementById("regVideo");
+      const btn = document.getElementById("btnToggleRegCamera");
+      const statusText = document.getElementById("regStatusText");
+
+      try {
+        regStream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: "user", width: { ideal: 640 }, height: { ideal: 480 } },
+          audio: false
+        });
+        video.srcObject = regStream;
+
+        video.onloadedmetadata = () => {
+          video.play();
+          isRegRunning = true;
+          btn.innerHTML = `<i class="bi bi-stop-circle"></i> Tutup Kamera`;
+          btn.classList.replace("btn-outline-success", "btn-outline-danger");
+          document.getElementById("btnCaptureFace").disabled = false;
+          statusText.textContent = "Arahkan wajah ke lingkaran panduan";
+          runRegistrationFaceCheckLoop();
+        };
+
+      } catch (err) {
+        console.error("Gagal buka kamera registrasi:", err);
+        Swal.fire('Izin Kamera Dibutuhkan', 'Gagal mengakses webcam. Berikan izin di browser Anda.', 'error');
+      }
+    }
+
+    function stopRegistrationCamera() {
+      if (regStream) {
+        regStream.getTracks().forEach(t => t.stop());
+        regStream = null;
+      }
+      if (regInterval) {
+        clearInterval(regInterval);
+        regInterval = null;
+      }
+      isRegRunning = false;
+
+      const video = document.getElementById("regVideo");
+      video.srcObject = null;
+
+      const canvas = document.getElementById("regCanvas");
+      const ctx = canvas.getContext("2d");
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      const btn = document.getElementById("btnToggleRegCamera");
+      btn.innerHTML = `<i class="bi bi-camera-video"></i> Buka Kamera`;
+      btn.classList.replace("btn-outline-danger", "btn-outline-success");
+      document.getElementById("btnCaptureFace").disabled = true;
+      document.getElementById("regStatusText").textContent = "Kamera Belum Aktif";
+    }
+
+    function runRegistrationFaceCheckLoop() {
+      const video = document.getElementById("regVideo");
+      const canvas = document.getElementById("regCanvas");
+
+      regInterval = setInterval(async () => {
+        if (!isRegRunning || video.paused || video.ended) return;
+
+        const displaySize = { width: video.videoWidth, height: video.videoHeight };
+        if (displaySize.width === 0 || displaySize.height === 0) return;
+
+        faceapi.matchDimensions(canvas, displaySize);
+
+        try {
+          const detection = await faceapi
+            .detectSingleFace(video, new faceapi.TinyFaceDetectorOptions({ inputSize: 320, scoreThreshold: 0.5 }))
+            .withFaceLandmarks();
+
+          const ctx = canvas.getContext("2d");
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+          if (detection) {
+            const resized = faceapi.resizeResults(detection, displaySize);
+            const box = resized.detection.box;
+
+            ctx.strokeStyle = "#059669";
+            ctx.lineWidth = 3;
+            ctx.strokeRect(box.x, box.y, box.width, box.height);
+
+            document.getElementById("regStatusText").textContent = "Wajah Siap Direkam! Klik tombol di bawah.";
+          } else {
+            document.getElementById("regStatusText").textContent = "Posisikan 1 wajah di dalam lingkaran...";
+          }
+        } catch (e) {}
+      }, 300);
+    }
+
+    async function captureRegistrationFace() {
+      const video = document.getElementById("regVideo");
+      if (!isRegRunning || video.paused) {
+        Swal.fire('Kamera Belum Aktif', 'Nyalakan kamera terlebih dahulu.', 'warning');
+        return;
+      }
+
+      const captureBtn = document.getElementById("btnCaptureFace");
+      captureBtn.disabled = true;
+      captureBtn.innerHTML = `<span class="spinner-border spinner-border-sm"></span> Menganalisis Vektor Wajah...`;
+
+      try {
+        // Ambil full descriptor 128 dimensi
+        const detection = await faceapi
+          .detectSingleFace(video, new faceapi.TinyFaceDetectorOptions({ inputSize: 416, scoreThreshold: 0.55 }))
+          .withFaceLandmarks()
+          .withFaceDescriptor();
+
+        if (!detection) {
+          playBeep("error");
+          Swal.fire('Wajah Tidak Terdeteksi', 'Pastikan wajah menghadap lurus ke kamera dengan pencahayaan terang.', 'warning');
+          return;
+        }
+
+        // Simpan 128 float array
+        capturedDescriptor = Array.from(detection.descriptor);
+
+        // Capture snapshot ke canvas preview kecil
+        const previewCanvas = document.getElementById("previewSnapshotCanvas");
+        previewCanvas.width = 160;
+        previewCanvas.height = 120;
+        const pctx = previewCanvas.getContext("2d");
+        // Efek cermin saat snapshot
+        pctx.translate(previewCanvas.width, 0);
+        pctx.scale(-1, 1);
+        pctx.drawImage(video, 0, 0, previewCanvas.width, previewCanvas.height);
+        document.getElementById("previewSnapshotContainer").classList.remove("d-none");
+
+        // Update status badge
+        const badge = document.getElementById("badgeDescriptorStatus");
+        badge.className = "badge bg-success";
+        badge.textContent = "128 Vektor Siap!";
+
+        // Aktifkan tombol simpan
+        document.getElementById("btnSimpanMaster").disabled = false;
+
+        playBeep("capture");
+
+        Swal.fire({
+          icon: 'success',
+          title: 'Sampel Wajah Berhasil Direkam!',
+          text: 'Vektor 128 dimensi berhasil diekstraksi. Lengkapi Nama & Jabatan lalu klik "Simpan ke Google Sheets".',
+          timer: 3000,
+          showConfirmButton: false
+        });
+
+      } catch (err) {
+        console.error("Gagal merekam sampel wajah:", err);
+        Swal.fire('Error', 'Terjadi kesalahan saat memproses sampel wajah: ' + err.message, 'error');
+      } finally {
+        captureBtn.disabled = false;
+        captureBtn.innerHTML = `<i class="bi bi-camera me-1"></i> Ambil & Rekam Wajah`;
+      }
+    }
+
+    async function saveNewUserToBackend() {
+      const namaInput = document.getElementById("regNama").value.trim();
+      let jabatanInput = document.getElementById("regJabatan").value;
+
+      if (jabatanInput === "Lainnya") {
+        jabatanInput = document.getElementById("regCustomJabatan").value.trim();
+      }
+
+      if (!namaInput) {
+        Swal.fire('Nama Kosong', 'Harap masukkan nama lengkap perangkat desa.', 'warning');
+        return;
+      }
+
+      if (!jabatanInput) {
+        Swal.fire('Jabatan Kosong', 'Harap pilih atau tuliskan jabatan perangkat desa.', 'warning');
+        return;
+      }
+
+      if (!capturedDescriptor || capturedDescriptor.length !== 128) {
+        Swal.fire('Wajah Belum Direkam', 'Harap rekam wajah melalui kamera terlebih dahulu.', 'warning');
+        return;
+      }
+
+      const saveBtn = document.getElementById("btnSimpanMaster");
+      saveBtn.disabled = true;
+      saveBtn.innerHTML = `<span class="spinner-border spinner-border-sm"></span> Menyimpan ke Google Sheets...`;
+
+      const payload = {
+        action: "registerUser",
+        nama: namaInput,
+        jabatan: jabatanInput,
+        descriptor: capturedDescriptor
+      };
+
+      try {
+        const result = await callAppsScriptApi(payload);
+
+        if (result.status === "success") {
+          playBeep("success");
+
+          Swal.fire({
+            icon: 'success',
+            title: 'Berhasil Terdaftar!',
+            text: `Perangkat ${namaInput} (${jabatanInput}) telah tersimpan di Google Sheets.`,
+          });
+
+          // Reset Form
+          document.getElementById("formRegister").reset();
+          document.getElementById("customJabatanDiv").classList.add("d-none");
+          document.getElementById("previewSnapshotContainer").classList.add("d-none");
+          document.getElementById("badgeDescriptorStatus").className = "badge bg-secondary";
+          document.getElementById("badgeDescriptorStatus").textContent = "Belum Terekam";
+          capturedDescriptor = null;
+          saveBtn.disabled = true;
+
+          // Hentikan kamera registrasi
+          stopRegistrationCamera();
+
+          // Refresh master data
+          await loadRegisteredUsers();
+
+        } else {
+          playBeep("error");
+          Swal.fire('Gagal Menyimpan', result.message || 'Terjadi kendala pada backend Apps Script.', 'error');
+        }
+      } catch (err) {
+        playBeep("error");
+        Swal.fire('Error Koneksi', 'Gagal menyimpan ke Google Sheets: ' + err.message, 'error');
+      } finally {
+        saveBtn.disabled = false;
+        saveBtn.innerHTML = `<i class="bi bi-cloud-arrow-up-fill"></i> Simpan ke Google Sheets`;
+      }
+    }
+
+    // ==========================================================================
+    // TAB 3: REKAPITULASI & EXPORT LAPORAN
+    // ==========================================================================
+    let allLogsData = [];
+    let filteredLogsData = [];
+
+    async function fetchAttendanceLogs(showToast = false) {
+      const tbody = document.getElementById("logsTbody");
+
+      try {
+        const res = await callAppsScriptApi({ action: "getLogs" });
+        if (res.status === "success") {
+          allLogsData = res.data || [];
+          applyLogFilters();
+
+          // Hitung absensi hari ini untuk statistik tab 1
+          const todayStr = new Date().toLocaleDateString("id-ID");
+          const todayCount = allLogsData.filter(log => {
+            return log.waktu && log.waktu.includes(todayStr.replace(/\//g, "/"));
+          }).length;
+          document.getElementById("statTodayLogs").textContent = todayCount;
+
+          if (showToast) {
+            Swal.fire({
+              toast: true,
+              position: 'top-end',
+              icon: 'success',
+              title: `Memuat ${allLogsData.length} baris data absensi`,
+              showConfirmButton: false,
+              timer: 2500
+            });
+          }
+        }
+      } catch (err) {
+        console.error("Gagal mengambil log absensi:", err);
+        tbody.innerHTML = `<tr><td colspan="7" class="text-center text-danger py-4"><i class="bi bi-exclamation-triangle me-1"></i> Gagal memuat data dari Google Sheets. Periksa URL Apps Script Anda.</td></tr>`;
+      }
+    }
+
+    function applyLogFilters() {
+      const keyword = (document.getElementById("filterKeyword").value || "").toLowerCase();
+      const status = document.getElementById("filterStatus").value;
+      const tanggal = document.getElementById("filterTanggal").value; // Format yyyy-mm-dd
+
+      filteredLogsData = allLogsData.filter(item => {
+        const matchName = item.nama.toLowerCase().includes(keyword) || item.jabatan.toLowerCase().includes(keyword);
+        const matchStatus = (status === "ALL") || (item.status === status);
+
+        let matchDate = true;
+        if (tanggal && item.waktu) {
+          // item.waktu biasanya berformat "dd/MM/yyyy HH:mm:ss"
+          const parts = tanggal.split("-"); // [yyyy, mm, dd]
+          const targetDateStr = `${parts[2]}/${parts[1]}/${parts[0]}`;
+          matchDate = item.waktu.includes(targetDateStr);
+        }
+
+        return matchName && matchStatus && matchDate;
+      });
+
+      renderLogsTable(filteredLogsData);
+    }
+
+    function resetLogFilters() {
+      document.getElementById("filterKeyword").value = "";
+      document.getElementById("filterStatus").value = "ALL";
+      document.getElementById("filterTanggal").value = "";
+      applyLogFilters();
+    }
+
+    function renderLogsTable(data) {
+      const tbody = document.getElementById("logsTbody");
+
+      if (!data || data.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" class="text-center py-4 text-muted">Tidak ada catatan presensi yang sesuai dengan filter.</td></tr>`;
+        return;
+      }
+
+      let html = "";
+      data.forEach((item, index) => {
+        const badgeClass = item.status === "Masuk" ? "badge-soft-success" : "badge-soft-danger";
+        const hasOsm = item.linkOsm && item.linkOsm !== "-";
+
+        html += `
+          <tr>
+            <td class="text-muted fw-bold">${index + 1}</td>
+            <td class="small fw-semibold">${escapeHtml(item.waktu)}</td>
+            <td class="fw-bold">${escapeHtml(item.nama)}</td>
+            <td class="small text-muted">${escapeHtml(item.jabatan)}</td>
+            <td><span class="badge ${badgeClass} px-2 py-1">${escapeHtml(item.status)}</span></td>
+            <td class="font-monospace small">${escapeHtml(item.latitude)}, ${escapeHtml(item.longitude)}</td>
+            <td class="text-center">
+              ${hasOsm ? `
+                <a href="${item.linkOsm}" target="_blank" class="btn btn-sm btn-outline-primary py-0 px-2" style="font-size: 0.8rem;" title="Buka Lokasi di OpenStreetMap">
+                  <i class="bi bi-geo-alt"></i> Peta
+                </a>
+              ` : '<span class="text-muted small">-</span>'}
+            </td>
+          </tr>
+        `;
+      });
+
+      tbody.innerHTML = html;
+    }
+
+    // ==========================================================================
+    // EXPORT TO EXCEL DENGAN SHEETJS (XLSX)
+    // ==========================================================================
+    function exportToExcel() {
+      if (!filteredLogsData || filteredLogsData.length === 0) {
+        Swal.fire('Data Kosong', 'Tidak ada data presensi untuk diexport ke Excel.', 'warning');
+        return;
+      }
+
+      // Format data untuk Excel
+      const excelRows = filteredLogsData.map((item, idx) => ({
+        "No": idx + 1,
+        "Waktu & Tanggal": item.waktu,
+        "Nama Perangkat": item.nama,
+        "Jabatan": item.jabatan,
+        "Status Kehadiran": item.status,
+        "Latitude": item.latitude,
+        "Longitude": item.longitude,
+        "Link Peta OpenStreetMap": item.linkOsm
+      }));
+
+      // Buat Worksheet & Workbook
+      const ws = XLSX.utils.json_to_sheet(excelRows);
+      
+      // Atur lebar kolom otomatis
+      ws['!cols'] = [
+        { wch: 6 },  // No
+        { wch: 22 }, // Waktu
+        { wch: 28 }, // Nama
+        { wch: 25 }, // Jabatan
+        { wch: 15 }, // Status
+        { wch: 15 }, // Lat
+        { wch: 15 }, // Lon
+        { wch: 45 }  // Link OSM
+      ];
+
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Rekap_Absensi");
+
+      const today = new Date().toISOString().slice(0, 10);
+      const filename = `Rekap_Presensi_Desa_${today}.xlsx`;
+
+      XLSX.writeFile(wb, filename);
+
+      Swal.fire({
+        icon: 'success',
+        title: 'Excel Berhasil Diunduh!',
+        text: `File disimpan dengan nama: ${filename}`,
+        timer: 2500,
+        showConfirmButton: false
+      });
+    }
+
+    // ==========================================================================
+    // EXPORT TO PDF RESMI DENGAN JSPDF & AUTOTABLE
+    // ==========================================================================
+    function exportToPDF() {
+      if (!filteredLogsData || filteredLogsData.length === 0) {
+        Swal.fire('Data Kosong', 'Tidak ada data presensi untuk diexport ke PDF.', 'warning');
+        return;
+      }
+
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+
+      const namaDesa = (namaDesaConfig || "PEMERINTAH DESA").toUpperCase();
+      const tanggalCetak = new Date().toLocaleDateString("id-ID", {
+        weekday: "long",
+        day: "numeric",
+        month: "long",
+        year: "numeric"
+      });
+
+      // Header Laporan Resmi (Kop Surat)
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(14);
+      doc.text("PEMERINTAH KABUPATEN / KOTA", 105, 18, { align: "center" });
+      doc.setFontSize(16);
+      doc.text(namaDesa, 105, 25, { align: "center" });
+      doc.setFontSize(11);
+      doc.setFont("helvetica", "normal");
+      doc.text("LAPORAN REKAPITULASI PRESENSI PERANGKAT DESA", 105, 32, { align: "center" });
+      
+      // Garis Kop Ganda
+      doc.setLineWidth(0.8);
+      doc.line(15, 36, 195, 36);
+      doc.setLineWidth(0.3);
+      doc.line(15, 37.2, 195, 37.2);
+
+      // Info Tanggal Cetak
+      doc.setFontSize(9);
+      doc.text(`Waktu Cetak: ${tanggalCetak}`, 15, 43);
+      doc.text(`Total Baris Data: ${filteredLogsData.length}`, 195, 43, { align: "right" });
+
+      // Siapkan baris tabel
+      const tableBody = filteredLogsData.map((item, idx) => [
+        idx + 1,
+        item.waktu,
+        item.nama,
+        item.jabatan,
+        item.status,
+        `${item.latitude}, ${item.longitude}`
+      ]);
+
+      // Render AutoTable
+      doc.autoTable({
+        startY: 46,
+        head: [["No", "Waktu & Tanggal", "Nama Perangkat", "Jabatan", "Status", "Titik Koordinat"]],
+        body: tableBody,
+        theme: "grid",
+        headStyles: {
+          fillColor: [6, 95, 70], // Emerald dark
+          textColor: [255, 255, 255],
+          fontStyle: "bold",
+          fontSize: 9,
+          halign: "center"
+        },
+        bodyStyles: {
+          fontSize: 8,
+          cellPadding: 2.5
+        },
+        columnStyles: {
+          0: { cellWidth: 10, halign: "center" },
+          1: { cellWidth: 35 },
+          2: { cellWidth: 45, fontStyle: "bold" },
+          3: { cellWidth: 40 },
+          4: { cellWidth: 20, halign: "center" },
+          5: { cellWidth: 40, fontStyle: "italic", fontSize: 7 }
+        },
+        alternateRowStyles: {
+          fillColor: [248, 250, 252]
+        },
+        margin: { left: 15, right: 15 }
+      });
+
+      // Tanda Tangan Footer
+      const finalY = doc.lastAutoTable.finalY || 150;
+      const signatureY = finalY + 15 > 250 ? 250 : finalY + 15;
+
+      if (signatureY < 260) {
+        doc.setFontSize(9);
+        doc.text("Mengetahui,", 145, signatureY);
+        doc.text("Kepala Desa", 145, signatureY + 5);
+        doc.text("( .................................................... )", 145, signatureY + 30);
+      }
+
+      // Download file PDF
+      const today = new Date().toISOString().slice(0, 10);
+      const filename = `Laporan_Presensi_Desa_${today}.pdf`;
+      doc.save(filename);
+
+      Swal.fire({
+        icon: 'success',
+        title: 'PDF Berhasil Dibuat!',
+        text: `Laporan disimpan dengan nama: ${filename}`,
+        timer: 2500,
+        showConfirmButton: false
+      });
+    }
+
+    // ==========================================================================
+    // PENGATURAN MODAL & LOCALSTORAGE
+    // ==========================================================================
+    function saveSettings() {
+      const urlInput = document.getElementById("inputBackendUrl").value.trim();
+      const namaDesa = document.getElementById("inputNamaDesa").value.trim();
+
+      if (urlInput) {
+        activeBackendUrl = urlInput;
+        localStorage.setItem("DESA_GAS_URL", urlInput);
+      }
+
+      if (namaDesa) {
+        namaDesaConfig = namaDesa;
+        localStorage.setItem("DESA_NAMA", namaDesa);
+      }
+
+      checkUrlConfig();
+
+      // Tutup Modal
+      const modalEl = document.getElementById("settingsModal");
+      const modal = bootstrap.Modal.getInstance(modalEl);
+      if (modal) modal.hide();
+
+      Swal.fire({
+        icon: 'success',
+        title: 'Pengaturan Disimpan',
+        text: 'Konfigurasi backend berhasil diperbarui!',
+        timer: 2000,
+        showConfirmButton: false
+      });
+
+      // Muat ulang data
+      if (isValidBackendUrl(activeBackendUrl)) {
+        loadRegisteredUsers(true);
+        fetchAttendanceLogs(true);
+      }
+    }
+
+    // Utility XSS Escaping
+    function escapeHtml(text) {
+      if (!text) return "";
+      return String(text)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+  </script>
+</body>
+</html>
